@@ -203,6 +203,19 @@ update msg model =
                 validReceivedTags =
                     List.filter Maybe.isJust tagsContext.receivedTags
 
+                maybeSource =
+                    model.status
+                        |> Maybe.map (List.map Tuple.first)
+                        |> Maybe.andThen (Steps.findTagsContextSource tagsContext)
+
+                postTagsBatch =
+                    case maybeSource of
+                        Just source ->
+                            Services.postTagsBatch source.service tagsContext
+
+                        Nothing ->
+                            Cmd.none
+
                 insert =
                     case List.length validReceivedTags of
                         0 ->
@@ -218,13 +231,15 @@ update msg model =
                                 )
 
                 cmd =
-                    model.status
-                        |> Maybe.map (List.map Tuple.first)
-                        |> Maybe.andThen (Steps.findTagsContextSource tagsContext)
+                    maybeSource
                         |> Maybe.andThen (Steps.takeTagsStep model.timestamp tagsContext)
                         |> Maybe.withDefault (do NextInLine)
             in
-                ($) model [ cmd ] [ insert ]
+                ($) model [ cmd, postTagsBatch ] [ insert ]
+
+        {- Don't touch anything! -}
+        NoOp ->
+            (!) model []
 
 
 

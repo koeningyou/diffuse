@@ -104,6 +104,7 @@ type alias Model =
     , isDevelopmentEnvironment : Bool
     , isElectron : Bool
     , isHTTPS : Bool
+    , isIOS : Bool
     , isOnline : Bool
     , isTouchDevice : Bool
     , origin : String
@@ -152,6 +153,7 @@ type alias ProgramFlags =
     { isDevelopmentEnvironment : Bool
     , isElectron : Bool
     , isHTTPS : Bool
+    , isIOS : Bool
     , isOnline : Bool
     , screenHeight : Int
     }

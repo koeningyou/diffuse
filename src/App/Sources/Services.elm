@@ -16,6 +16,7 @@ import Sources.Services.AzureBlob as AzureBlob
 import Sources.Services.AzureFile as AzureFile
 import Sources.Services.Dropbox as Dropbox
 import Sources.Services.Google as Google
+import Sources.Services.Ios as Ios
 import Sources.Services.Ipfs as Ipfs
 import Sources.Services.Local as Local
 import Sources.Services.WebDav as WebDav
@@ -41,6 +42,9 @@ initialData service =
 
         Google ->
             Google.initialData
+
+        Ios ->
+            Ios.initialData
 
         Ipfs ->
             Ipfs.initialData
@@ -69,6 +73,9 @@ makeTrackUrl service =
 
         Google ->
             Google.makeTrackUrl
+
+        Ios ->
+            Ios.makeTrackUrl
 
         Ipfs ->
             Ipfs.makeTrackUrl
@@ -104,6 +111,9 @@ makeTree service =
         Google ->
             Google.makeTree
 
+        Ios ->
+            Ios.makeTree
+
         Ipfs ->
             Ipfs.makeTree
 
@@ -131,6 +141,9 @@ parseErrorResponse service =
 
         Google ->
             Google.parseErrorResponse
+
+        Ios ->
+            Ios.parseErrorResponse
 
         Ipfs ->
             Ipfs.parseErrorResponse
@@ -160,6 +173,9 @@ parsePreparationResponse service =
         Google ->
             Google.parsePreparationResponse
 
+        Ios ->
+            Ios.parsePreparationResponse
+
         Ipfs ->
             Ipfs.parsePreparationResponse
 
@@ -187,6 +203,9 @@ parseTreeResponse service =
 
         Google ->
             Google.parseTreeResponse
+
+        Ios ->
+            Ios.parseTreeResponse
 
         Ipfs ->
             Ipfs.parseTreeResponse
@@ -216,6 +235,9 @@ postProcessTree service =
         Google ->
             Google.postProcessTree
 
+        Ios ->
+            Ios.postProcessTree
+
         Ipfs ->
             Ipfs.postProcessTree
 
@@ -224,6 +246,37 @@ postProcessTree service =
 
         WebDav ->
             WebDav.postProcessTree
+
+
+postTagsBatch : Service -> ContextForTags -> Cmd Processing.Msg
+postTagsBatch service =
+    case service of
+        AmazonS3 ->
+            AmazonS3.postTagsBatch
+
+        AzureBlob ->
+            AzureBlob.postTagsBatch
+
+        AzureFile ->
+            AzureFile.postTagsBatch
+
+        Dropbox ->
+            Dropbox.postTagsBatch
+
+        Google ->
+            Google.postTagsBatch
+
+        Ios ->
+            Ios.postTagsBatch
+
+        Ipfs ->
+            Ipfs.postTagsBatch
+
+        Local ->
+            Local.postTagsBatch
+
+        WebDav ->
+            WebDav.postTagsBatch
 
 
 prepare : Service -> String -> SourceData -> Marker -> Maybe (Http.Request String)
@@ -243,6 +296,9 @@ prepare service =
 
         Google ->
             Google.prepare
+
+        Ios ->
+            Ios.prepare
 
         Ipfs ->
             Ipfs.prepare
@@ -271,6 +327,9 @@ properties service =
 
         Google ->
             Google.properties
+
+        Ios ->
+            Ios.properties
 
         Ipfs ->
             Ipfs.properties
@@ -314,6 +373,9 @@ keyToType str =
         "Google" ->
             Google
 
+        "Ios" ->
+            Ios
+
         "Ipfs" ->
             Ipfs
 
@@ -345,6 +407,9 @@ typeToKey service =
         Google ->
             "Google"
 
+        Ios ->
+            "Ios"
+
         Ipfs ->
             "Ipfs"
 
@@ -360,8 +425,8 @@ typeToKey service =
 Maps a service key to a label.
 
 -}
-labels : Bool -> List ( String, String )
-labels isElectron =
+labels : ViabilityDependencies -> List ( String, String )
+labels { isElectron, isIOS } =
     let
         default =
             [ ( typeToKey AmazonS3, "Amazon S3" )
@@ -375,8 +440,13 @@ labels isElectron =
         if isElectron then
             List.append
                 default
-                [ ( typeToKey Local, "Locally" )
+                [ ( typeToKey Local, "This Computer" )
                 , ( typeToKey WebDav, "WebDAV" )
+                ]
+        else if isIOS then
+            List.append
+                default
+                [ ( typeToKey Ios, "This iOS Device" )
                 ]
         else
             default

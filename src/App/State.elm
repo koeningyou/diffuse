@@ -71,6 +71,7 @@ initialModel flags initialPage origin =
     , isDevelopmentEnvironment = flags.isDevelopmentEnvironment
     , isElectron = flags.isElectron
     , isHTTPS = flags.isHTTPS
+    , isIOS = flags.isIOS
     , isOnline = flags.isOnline
     , isTouchDevice = False
     , origin = origin
@@ -164,6 +165,7 @@ update msg model =
                     { isDevelopmentEnvironment = model.isDevelopmentEnvironment
                     , isElectron = model.isElectron
                     , isHTTPS = model.isHTTPS
+                    , isIOS = model.isIOS
                     , isOnline = model.isOnline
                     , screenHeight = model.screenHeight
                     }

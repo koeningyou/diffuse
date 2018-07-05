@@ -15,6 +15,7 @@ app = Elm.App.embed(
   { isDevelopmentEnvironment: location.hostname === "localhost"
   , isElectron: !!self.electron
   , isHTTPS: location.protocol === "https:"
+  , isIOS: !!self.webkit
   , isOnline: navigator.onLine
   , screenHeight: window.screen.height || window.outerHeight
   }

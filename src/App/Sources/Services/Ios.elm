@@ -1,4 +1,4 @@
-module Sources.Services.Local exposing (..)
+module Sources.Services.Ios exposing (..)
 
 {-| Local Service.
 
@@ -22,8 +22,8 @@ import Time
 import Utils exposing (encodeUri)
 
 
-electronServerUrl : String
-electronServerUrl =
+serverUrl : String
+serverUrl =
     "http://127.0.0.1:44999"
 
 
@@ -33,8 +33,7 @@ electronServerUrl =
 
 
 defaults =
-    { localPath = "~/Music"
-    , name = "Local Music"
+    { name = "Music from iOS device"
     }
 
 
@@ -46,8 +45,7 @@ Will be used for the forms.
 -}
 properties : List ( String, String, String, Bool )
 properties =
-    [ ( "localPath", "Directory", defaults.localPath, False )
-    , ( "name", "Label", defaults.name, False )
+    [ ( "name", "Label", defaults.name, False )
     ]
 
 
@@ -56,8 +54,7 @@ properties =
 initialData : SourceData
 initialData =
     Dict.fromList
-        [ ( "localPath", defaults.localPath )
-        , ( "name", defaults.name )
+        [ ( "name", defaults.name )
         ]
 
 
@@ -82,16 +79,9 @@ Or a specific directory in the bucket.
 -}
 makeTree : SourceData -> Marker -> Date -> (Result Http.Error String -> Msg) -> Cmd Msg
 makeTree srcData marker currentDate resultMsg =
-    let
-        dir =
-            Dict.fetch "localPath" defaults.localPath srcData
-
-        url =
-            electronServerUrl ++ "/local/tree?path=" ++ encodeUri dir
-    in
-        url
-            |> Http.getString
-            |> Http.send resultMsg
+    (serverUrl ++ "/lib/tree")
+        |> Http.getString
+        |> Http.send resultMsg
 
 
 {-| Re-export parser functions.
@@ -130,14 +120,16 @@ parseErrorResponse =
 -}
 postProcessTree : List String -> List String
 postProcessTree =
-    Sources.Pick.selectMusicFiles
+    identity
 
 
 {-| Command to be executed after each tags step.
 -}
 postTagsBatch : ContextForTags -> Cmd Msg
 postTagsBatch _ =
-    Cmd.none
+    (serverUrl ++ "/lib/flush")
+        |> Http.getString
+        |> Http.send (always NoOp)
 
 
 
@@ -151,10 +143,4 @@ We need this to play the track.
 -}
 makeTrackUrl : Date -> SourceData -> HttpMethod -> String -> String
 makeTrackUrl currentDate srcData method pathToFile =
-    let
-        dir =
-            srcData
-                |> Dict.fetch "localPath" defaults.localPath
-                |> String.chop "/"
-    in
-        electronServerUrl ++ "/local/file?path=" ++ encodeUri (dir ++ "/" ++ pathToFile)
+    serverUrl ++ "/lib/file?path=" ++ encodeUri pathToFile

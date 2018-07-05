@@ -56,32 +56,39 @@ import Styles exposing (Styles(..))
 
 entry : Sources.Page -> TopLevel.Model -> Node
 entry page model =
-    case page of
-        Edit _ ->
-            lazySpread
-                pageEdit
-                model.sources.form
+    let
+        viability =
+            { isElectron = model.isElectron
+            , isIOS = model.isIOS
+            , isOnline = model.isOnline
+            }
+    in
+        case page of
+            Edit _ ->
+                lazySpread
+                    pageEdit
+                    model.sources.form
 
-        Index ->
-            lazySpread3
-                pageIndex
-                model.sources.collection
-                ( model.sources.isProcessing, model.sources.processingErrors )
-                { isElectron = model.isElectron, isOnline = model.isOnline }
+            Index ->
+                lazySpread3
+                    pageIndex
+                    model.sources.collection
+                    ( model.sources.isProcessing, model.sources.processingErrors )
+                    viability
 
-        New ->
-            lazySpread3
-                pageNew
-                model.sources.form
-                model.origin
-                model.isElectron
+            New ->
+                lazySpread3
+                    pageNew
+                    model.sources.form
+                    model.origin
+                    viability
 
-        NewThroughRedirect service hash ->
-            lazySpread3
-                pageNew
-                model.sources.form
-                model.origin
-                model.isElectron
+            NewThroughRedirect service hash ->
+                lazySpread3
+                    pageNew
+                    model.sources.form
+                    model.origin
+                    viability
 
 
 
@@ -93,7 +100,7 @@ pageIndex :
     -> ( IsProcessing, List ( SourceId, String ) )
     -> ViabilityDependencies
     -> Node
-pageIndex sources ( isProcessing, processingErrors ) viabilityDependencies =
+pageIndex sources ( isProcessing, processingErrors ) viabilityDeps =
     column
         Zed
         [ height fill ]
@@ -174,7 +181,7 @@ pageIndex sources ( isProcessing, processingErrors ) viabilityDependencies =
                         (\s ->
                             ( s
                             , s
-                                |> isViable viabilityDependencies
+                                |> isViable viabilityDeps
                             , isProcessing
                                 |> Maybe.andThen (List.find (.id >> (==) s.id))
                                 |> Maybe.map (always True)
@@ -306,8 +313,8 @@ renderSource index ( source, sourceIsViable, isProcessing, processingError ) =
 -- {Page} New
 
 
-pageNew : Sources.Form -> String -> Bool -> Node
-pageNew sForm origin isElectron =
+pageNew : Sources.Form -> String -> ViabilityDependencies -> Node
+pageNew sForm origin viabilityDeps =
     column
         Zed
         [ height fill ]
@@ -351,7 +358,7 @@ pageNew sForm origin isElectron =
                 -- Form
                 ------------------------------------
                 , within
-                    [ logoBackdrop, takeOver (pageNewForm step source origin isElectron) ]
+                    [ logoBackdrop, takeOver (pageNewForm step source origin viabilityDeps) ]
                     (takeOver empty)
                 ]
 
@@ -360,11 +367,11 @@ pageNew sForm origin isElectron =
         )
 
 
-pageNewForm : Int -> Source -> String -> Bool -> Node
-pageNewForm step source origin isElectron =
+pageNewForm : Int -> Source -> String -> ViabilityDependencies -> Node
+pageNewForm step source origin viabilityDeps =
     case step of
         1 ->
-            pageNewStep1 source isElectron
+            pageNewStep1 source viabilityDeps
 
         2 ->
             pageNewStep2 source origin
@@ -376,11 +383,16 @@ pageNewForm step source origin isElectron =
             empty
 
 
-pageNewStep1 : Source -> Bool -> Node
-pageNewStep1 source isElectron =
+pageNewStep1 : Source -> ViabilityDependencies -> Node
+pageNewStep1 source viabilityDeps =
     let
         msg =
-            SourcesMsg (Sources.AssignFormStep 2)
+            case source.service of
+                Ios ->
+                    SourcesMsg (Sources.AssignFormStep 3)
+
+                _ ->
+                    SourcesMsg (Sources.AssignFormStep 2)
     in
         column Zed
             [ center
@@ -394,7 +406,7 @@ pageNewStep1 source isElectron =
             [ h2 H2 [] (text "Where is your music stored?")
 
             --
-            , Services.labels isElectron
+            , Services.labels viabilityDeps
                 |> select (AssignFormService >> SourcesMsg) (toString source.service)
                 |> el Zed [ maxWidth (px 350), width fill ]
 

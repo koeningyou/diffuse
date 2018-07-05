@@ -135,6 +135,13 @@ postProcessTree =
     identity
 
 
+{-| Command to be executed after each tags step.
+-}
+postTagsBatch : ContextForTags -> Cmd Msg
+postTagsBatch _ =
+    Cmd.none
+
+
 
 -- Track URL
 

@@ -44,6 +44,9 @@ setProperSourceId model source =
 isViable : ViabilityDependencies -> Source -> Bool
 isViable deps source =
     case source.service of
+        Sources.Types.Ios ->
+            deps.isIOS
+
         Sources.Types.Local ->
             deps.isElectron
 
@@ -60,6 +63,7 @@ Therefor in some situations we need to filter out the unusable ones.
 viableSourcesOnly : TopLevel.Model -> List Source -> List Source
 viableSourcesOnly model =
     { isElectron = model.isElectron
+    , isIOS = model.isIOS
     , isOnline = model.isOnline
     }
         |> isViable

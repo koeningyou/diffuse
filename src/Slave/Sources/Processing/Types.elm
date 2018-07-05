@@ -12,6 +12,7 @@ import Tracks.Types exposing (..)
 type Msg
     = Process String (List Source) (List Track)
     | NextInLine
+    | NoOp
     | PrepareStep Context (Result Http.Error String)
     | TreeStep Context (Result Http.Error String)
     | TreeStepRemoveTracks SourceId (List String)

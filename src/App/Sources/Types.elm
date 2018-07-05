@@ -14,6 +14,7 @@ type Service
     | AzureFile
     | Dropbox
     | Google
+    | Ios
     | Ipfs
     | Local
     | WebDav
@@ -93,5 +94,6 @@ type alias IsProcessing =
 
 type alias ViabilityDependencies =
     { isElectron : Bool
+    , isIOS : Bool
     , isOnline : Bool
     }
