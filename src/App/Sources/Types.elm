@@ -16,6 +16,7 @@ type Service
     | Google
     | Ipfs
     | Local
+    | OneDrive
     | WebDav
 
 
@@ -75,7 +76,7 @@ type Page
     = Edit SourceId
     | Index
     | New
-    | NewThroughRedirect Service String
+    | NewThroughRedirect Service (Dict String String)
 
 
 

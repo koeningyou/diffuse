@@ -6,6 +6,7 @@ module Sources.Services exposing (..)
 -- Services
 
 import Date exposing (Date)
+import Dict exposing (Dict)
 import Http
 import Sources.Processing.Types as Processing exposing (..)
 import Sources.Services.AmazonS3 as AmazonS3
@@ -15,9 +16,9 @@ import Sources.Services.Dropbox as Dropbox
 import Sources.Services.Google as Google
 import Sources.Services.Ipfs as Ipfs
 import Sources.Services.Local as Local
+import Sources.Services.OneDrive as OneDrive
 import Sources.Services.WebDav as WebDav
 import Sources.Types exposing (..)
-
 
 
 -- Functions implemented by services
@@ -47,6 +48,9 @@ initialData service =
         Local ->
             Local.initialData
 
+        OneDrive ->
+            OneDrive.initialData
+
         WebDav ->
             WebDav.initialData
 
@@ -74,6 +78,9 @@ makeTrackUrl service =
 
         Local ->
             Local.makeTrackUrl
+
+        OneDrive ->
+            OneDrive.makeTrackUrl
 
         WebDav ->
             WebDav.makeTrackUrl
@@ -109,6 +116,9 @@ makeTree service =
         Local ->
             Local.makeTree
 
+        OneDrive ->
+            OneDrive.makeTree
+
         WebDav ->
             WebDav.makeTree
 
@@ -136,6 +146,9 @@ parseErrorResponse service =
 
         Local ->
             Local.parseErrorResponse
+
+        OneDrive ->
+            OneDrive.parseErrorResponse
 
         WebDav ->
             WebDav.parseErrorResponse
@@ -165,6 +178,9 @@ parsePreparationResponse service =
         Local ->
             Local.parsePreparationResponse
 
+        OneDrive ->
+            OneDrive.parsePreparationResponse
+
         WebDav ->
             WebDav.parsePreparationResponse
 
@@ -192,6 +208,9 @@ parseTreeResponse service =
 
         Local ->
             Local.parseTreeResponse
+
+        OneDrive ->
+            OneDrive.parseTreeResponse
 
         WebDav ->
             WebDav.parseTreeResponse
@@ -221,6 +240,9 @@ postProcessTree service =
         Local ->
             Local.postProcessTree
 
+        OneDrive ->
+            OneDrive.postProcessTree
+
         WebDav ->
             WebDav.postProcessTree
 
@@ -249,6 +271,9 @@ prepare service =
         Local ->
             Local.prepare
 
+        OneDrive ->
+            OneDrive.prepare
+
         WebDav ->
             WebDav.prepare
 
@@ -276,6 +301,9 @@ properties service =
 
         Local ->
             Local.properties
+
+        OneDrive ->
+            OneDrive.properties
 
         WebDav ->
             WebDav.properties
@@ -319,6 +347,9 @@ keyToType str =
         "Local" ->
             Local
 
+        "OneDrive" ->
+            OneDrive
+
         "WebDav" ->
             WebDav
 
@@ -350,6 +381,9 @@ typeToKey service =
         Local ->
             "Local"
 
+        OneDrive ->
+            "OneDrive"
+
         WebDav ->
             "WebDav"
 
@@ -368,34 +402,37 @@ labels isElectron =
             , ( typeToKey Dropbox, "Dropbox" )
             , ( typeToKey Google, "Google Drive" )
             , ( typeToKey Ipfs, "IPFS" )
+            , ( typeToKey OneDrive, "One Drive" )
 
             -- Disabled
             -- ========
             -- ( typeToKey AzureFile, "Azure File Storage" ) (see issue #123)
             ]
     in
-    if isElectron then
-        List.append
+        if isElectron then
+            List.append
+                default
+                [ ( typeToKey Local, "Locally" )
+                , ( typeToKey WebDav, "WebDAV" )
+                ]
+        else
             default
-            [ ( typeToKey Local, "Locally" )
-            , ( typeToKey WebDav, "WebDAV" )
-            ]
-
-    else
-        default
 
 
 {-| Build a `NewForm` from a redirect with a hash.
 Example use-case: OAuth
 -}
-newFormThroughRedirect : Service -> String -> Form
-newFormThroughRedirect service hash =
+newFormThroughRedirect : Service -> Dict String String -> Form
+newFormThroughRedirect service dict =
     case service of
         Dropbox ->
-            NewForm 3 (makeSource Dropbox <| Dropbox.authorizationSourceData hash)
+            NewForm 3 (makeSource Dropbox <| Dropbox.authorizationSourceData dict)
 
         Google ->
-            NewForm 3 (makeSource Google <| Google.authorizationSourceData hash)
+            NewForm 3 (makeSource Google <| Google.authorizationSourceData dict)
+
+        OneDrive ->
+            NewForm 3 (makeSource OneDrive <| OneDrive.authorizationSourceData dict)
 
         _ ->
             NewForm 3 (makeSource service <| initialData service)

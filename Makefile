@@ -87,6 +87,7 @@ server:
 test:
 	@echo "> Run tests"
 	@$(NODE_BIN)/elm-doctest \
+		src/App/Routing/Utils.elm \
 		src/App/Sources/Crypto/Hex.elm \
 		src/App/Sources/Crypto/Hmac.elm \
 		src/App/Sources/Services/Azure/Authorization.elm

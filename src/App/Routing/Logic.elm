@@ -1,10 +1,12 @@
 module Routing.Logic exposing (locationToMessage, locationToPage, isSameBase, pageToHref)
 
+import Dict
 import Http
 import Navigation
 import Playlists.Types as Playlists
 import Queue.Types as Queue
 import Routing.Types exposing (..)
+import Routing.Utils
 import Sources.Services
 import Sources.Types as Sources
 import UrlParser exposing (..)
@@ -31,17 +33,10 @@ locationToPage location =
     in
         case page of
             Sources (Sources.NewThroughRedirect service _) ->
-                if String.isEmpty location.hash then
-                    location.search
-                        |> String.dropLeft 1
-                        |> Sources.NewThroughRedirect service
-                        |> Sources
-                else
-                    location
-                        |> UrlParser.parseHash string
-                        |> Maybe.withDefault "unparsableHash"
-                        |> Sources.NewThroughRedirect service
-                        |> Sources
+                location
+                    |> Routing.Utils.locationToDict
+                    |> Sources.NewThroughRedirect service
+                    |> Sources
 
             _ ->
                 page
@@ -178,11 +173,14 @@ route =
 
         -- Sources ~ Services
         , map
-            (Sources <| Sources.NewThroughRedirect Sources.Dropbox "")
+            (Sources <| Sources.NewThroughRedirect Sources.Dropbox <| Dict.empty)
             (s "sources" </> s "new" </> s "dropbox")
         , map
-            (Sources <| Sources.NewThroughRedirect Sources.Google "")
+            (Sources <| Sources.NewThroughRedirect Sources.Google <| Dict.empty)
             (s "sources" </> s "new" </> s "google")
+        , map
+            (Sources <| Sources.NewThroughRedirect Sources.OneDrive <| Dict.empty)
+            (s "sources" </> s "new" </> s "onedrive")
 
         -- Playlists
         , map (Playlists Playlists.Index) (s "playlists")

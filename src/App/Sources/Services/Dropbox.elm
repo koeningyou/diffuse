@@ -5,7 +5,7 @@ module Sources.Services.Dropbox exposing (..)
 
 import Base64
 import Date exposing (Date)
-import Dict
+import Dict exposing (Dict)
 import Dict.Ext as Dict
 import Http
 import Json.Decode
@@ -91,32 +91,17 @@ authorizationUrl origin sourceData =
 
 {-| Authorization source data.
 -}
-authorizationSourceData : String -> SourceData
-authorizationSourceData hash =
-    let
-        mapFn item =
-            case String.split "=" item of
-                [ a, b ] ->
-                    ( a, b )
-
-                _ ->
-                    ( "in", "valid" )
-
-        hashDict =
-            hash
-                |> String.split "&"
-                |> List.map mapFn
-                |> Dict.fromList
-    in
-        hashDict
-            |> Dict.get "state"
-            |> Maybe.andThen Http.decodeUri
-            |> Maybe.andThen (Base64.decode >> Result.toMaybe)
-            |> Maybe.withDefault "{}"
-            |> Json.Decode.decodeString (Json.Decode.dict Json.Decode.string)
-            |> Result.withDefault Dict.empty
-            |> Dict.unionF initialData
-            |> Dict.update "accessToken" (always <| Dict.get "access_token" hashDict)
+authorizationSourceData : Dict String String -> SourceData
+authorizationSourceData dict =
+    dict
+        |> Dict.get "state"
+        |> Maybe.andThen Http.decodeUri
+        |> Maybe.andThen (Base64.decode >> Result.toMaybe)
+        |> Maybe.withDefault "{}"
+        |> Json.Decode.decodeString (Json.Decode.dict Json.Decode.string)
+        |> Result.withDefault Dict.empty
+        |> Dict.unionF initialData
+        |> Dict.update "accessToken" (always <| Dict.get "access_token" dict)
 
 
 

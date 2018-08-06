@@ -1,6 +1,6 @@
-module Sources.Services.Google exposing (..)
+module Sources.Services.OneDrive exposing (..)
 
-{-| Google Drive Service.
+{-| Dropbox Service.
 -}
 
 import Base64
@@ -13,7 +13,8 @@ import Json.Encode
 import Regex
 import Sources.Pick
 import Sources.Processing.Types exposing (..)
-import Sources.Services.Google.Parser as Parser
+import Sources.Services.OneDrive.Parser as Parser
+import Sources.Services.Utils exposing (cleanPath, noPrep)
 import Sources.Types exposing (SourceData)
 import Time
 import Utils exposing (encodeUri, makeQueryParam)
@@ -24,19 +25,11 @@ import Utils exposing (encodeUri, makeQueryParam)
 
 
 defaults =
-    { clientId = defaultClientId
-    , clientSecret = "uHBInBeGnA38FOlpLTEyPlUv"
-    , folderId = ""
-    , name = "Music from Google Drive"
+    { clientId = "363b2c44-66a1-49c2-bef0-df7553b0796c"
+    , clientSecret = "puylWECF8^fnwRJF4650}}*"
+    , directoryPath = "/"
+    , name = "Music from One Drive"
     }
-
-
-defaultClientId : String
-defaultClientId =
-    String.concat
-        [ "720114869239-74amkqeila5ursobjqvo9c263u1cllhu"
-        , ".apps.googleusercontent.com"
-        ]
 
 
 {-| The list of properties we need from the user.
@@ -48,9 +41,9 @@ Will be used for the forms.
 properties : List ( String, String, String, Bool )
 properties =
     [ ( "authCode", "Auth Code", "...", True )
-    , ( "clientId", "Client Id (Google Console)", defaults.clientId, False )
-    , ( "clientSecret", "Client Secret (Google Console)", defaults.clientSecret, False )
-    , ( "folderId", "Folder Id (Optional)", defaults.folderId, False )
+    , ( "clientId", "Client Id (App Portal)", defaults.clientId, False )
+    , ( "clientSecret", "Client Secret (App Portal)", defaults.clientSecret, False )
+    , ( "directoryPath", "Directory", defaults.directoryPath, False )
     , ( "name", "Label", defaults.name, False )
     ]
 
@@ -63,7 +56,7 @@ initialData =
         [ ( "authCode", "" )
         , ( "clientId", defaults.clientId )
         , ( "clientSecret", defaults.clientSecret )
-        , ( "folderId", defaults.folderId )
+        , ( "directoryPath", defaults.directoryPath )
         , ( "name", defaults.name )
         ]
 
@@ -89,17 +82,14 @@ authorizationUrl origin sourceData =
                 |> Json.Encode.encode 0
                 |> Base64.encode
     in
-        [ ( "access_type", "offline" )
-        , ( "client_id", Dict.fetch "clientId" "unknown" sourceData )
-        , ( "prompt", "consent" )
-        , ( "redirect_uri", origin ++ "/sources/new/google" )
+        [ ( "client_id", Dict.fetch "clientId" "unknown" sourceData )
+        , ( "redirect_uri", origin ++ "/sources/new/onedrive#state=" ++ encodeUri state )
         , ( "response_type", "code" )
-        , ( "scope", "https://www.googleapis.com/auth/drive.readonly" )
-        , ( "state", state )
+        , ( "scope", "files.read offline_access" )
         ]
             |> List.map makeQueryParam
             |> String.join "&"
-            |> String.append "https://accounts.google.com/o/oauth2/v2/auth?"
+            |> String.append "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"
 
 
 {-| Authorization source data.
@@ -131,7 +121,7 @@ prepare origin srcData _ =
         maybeCode =
             Dict.get "authCode" srcData
 
-        queryParams =
+        params =
             case maybeCode of
                 -- Exchange authorization code for access token & request token
                 Just authCode ->
@@ -139,7 +129,7 @@ prepare origin srcData _ =
                     , ( "client_secret", Dict.fetch "clientSecret" "" srcData )
                     , ( "code", Dict.fetch "authCode" "" srcData )
                     , ( "grant_type", "authorization_code" )
-                    , ( "redirect_uri", origin ++ "/sources/new/google" )
+                    , ( "redirect_uri", origin ++ "/sources/new/onedrive" )
                     ]
 
                 -- Refresh access token
@@ -150,18 +140,18 @@ prepare origin srcData _ =
                     , ( "grant_type", "refresh_token" )
                     ]
 
-        query =
-            queryParams
+        cgiParams =
+            params
                 |> List.map makeQueryParam
                 |> String.join "&"
 
         url =
-            "https://www.googleapis.com/oauth2/v4/token?" ++ query
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     in
         { method = "POST"
         , headers = []
         , url = url
-        , body = Http.emptyBody
+        , body = Http.stringBody "application/x-www-form-urlencoded" cgiParams
         , expect = Http.expectString
         , timeout = Nothing
         , withCredentials = False
@@ -185,43 +175,10 @@ makeTree srcData marker currentDate resultMsg =
     let
         accessToken =
             Dict.fetch "accessToken" "" srcData
-
-        folderId =
-            Dict.fetch "folderId" "" srcData
-
-        queryBase =
-            [ "mimeType contains 'audio/'" ]
-
-        query =
-            case folderId of
-                "" ->
-                    queryBase
-
-                fid ->
-                    queryBase ++ [ "'" ++ fid ++ "' in parents" ]
-
-        paramsBase =
-            [ ( "pageSize", "1000" )
-            , ( "q", String.join " and " query )
-            , ( "spaces", "drive" )
-            ]
-
-        params =
-            (case marker of
-                InProgress cursor ->
-                    [ ( "pageToken", cursor )
-                    ]
-
-                _ ->
-                    []
-            )
-                |> List.append paramsBase
-                |> List.map makeQueryParam
-                |> String.join "&"
     in
         { method = "GET"
         , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
-        , url = "https://www.googleapis.com/drive/v3/files?" ++ params
+        , url = "https://graph.microsoft.com/v1.0/me/drive/root/children"
         , body = Http.emptyBody
         , expect = Http.expectString
         , timeout = Nothing
@@ -259,7 +216,7 @@ parseErrorResponse =
 -}
 postProcessTree : List String -> List String
 postProcessTree =
-    identity
+    Sources.Pick.selectMusicFiles
 
 
 
@@ -272,14 +229,5 @@ We need this to play the track.
 
 -}
 makeTrackUrl : Date -> SourceData -> HttpMethod -> String -> String
-makeTrackUrl currentDate srcData method fileId =
-    let
-        accessToken =
-            Dict.fetch "accessToken" "" srcData
-    in
-        String.concat
-            [ "https://www.googleapis.com/drive/v3/files/"
-            , fileId
-            , "?alt=media&access_token="
-            , accessToken
-            ]
+makeTrackUrl currentDate srcData method pathToFile =
+    "dropbox://" ++ Dict.fetch "accessToken" "" srcData ++ "@" ++ pathToFile

@@ -25,6 +25,7 @@ import Routing.Types exposing (Msg(RedirectTo))
 import Sources.Services as Services
 import Sources.Services.Dropbox as Dropbox
 import Sources.Services.Google as Google
+import Sources.Services.OneDrive as OneDrive
 import Sources.Types as Sources exposing (..)
 import Sources.Utils exposing (isViable)
 import Types as TopLevel exposing (Msg(..))
@@ -426,6 +427,9 @@ pageNewStep2 source origin =
 
                 Google ->
                     RoutingMsg (RedirectTo <| Google.authorizationUrl origin source.data)
+
+                OneDrive ->
+                    RoutingMsg (RedirectTo <| OneDrive.authorizationUrl origin source.data)
 
                 _ ->
                     if validateProperties source then

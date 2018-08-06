@@ -84,13 +84,13 @@ mapModel nextPage model =
                 _ ->
                     model
 
-        Sources (Sources.Types.NewThroughRedirect service hash) ->
+        Sources (Sources.Types.NewThroughRedirect service dict) ->
             let
                 sources =
                     model.sources
 
                 form =
-                    Sources.Services.newFormThroughRedirect service hash
+                    Sources.Services.newFormThroughRedirect service dict
             in
                 { model | sources = { sources | form = form } }
 
